@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,7 +43,7 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
 export function NoteForm({ note, onFinished }: NoteFormProps) {
   const { toast } = useToast();
   const formAction = note ? updateNote.bind(null, note.id) : createNote;
-  const [state, dispatch] = useFormState(formAction, undefined);
+  const [state, dispatch] = useActionState(formAction, undefined);
 
   const { register, formState: { errors } } = useForm<NoteFormData>({
     resolver: zodResolver(NoteSchema),
