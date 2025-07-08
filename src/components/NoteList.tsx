@@ -85,7 +85,7 @@ export default function NoteList({ notes }: { notes: Note[] }) {
     <>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Your Notes</h2>
-        <Button onClick={handleCreate} style={{ backgroundColor: 'var(--primary)' }}>
+        <Button onClick={handleCreate} className="bg-foreground text-background hover:bg-foreground/90">
           <PlusCircle className="mr-2 h-4 w-4" /> Create Note
         </Button>
       </div>

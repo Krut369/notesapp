@@ -37,7 +37,7 @@ type NoteFormProps = {
 
 function SubmitButton({ isEdit, isPending }: { isEdit: boolean; isPending: boolean }) {
   return (
-    <Button type="submit" disabled={isPending} className="w-full sm:w-auto" style={{ backgroundColor: 'var(--primary)'}}>
+    <Button type="submit" disabled={isPending} className="w-full sm:w-auto bg-foreground text-background hover:bg-foreground/90">
       {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
       {isPending ? (isEdit ? 'Saving...' : 'Creating...') : (isEdit ? 'Save Changes' : 'Create Note')}
     </Button>
