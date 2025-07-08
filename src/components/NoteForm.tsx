@@ -2,7 +2,7 @@
 
 import { useEffect, useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { FormControl } from './ui/form';
+import { Form, FormControl } from './ui/form';
 
 const NoteSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -51,7 +51,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
   const formAction = note ? updateNote.bind(null, note.id) : createNote;
   const [state, dispatch] = useActionState(formAction, undefined);
 
-  const { register, formState: { errors }, control, setValue } = useForm<NoteFormData>({
+  const form = useForm<NoteFormData>({
     resolver: zodResolver(NoteSchema),
     defaultValues: {
       title: note?.title || '',
@@ -60,6 +60,8 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
       description: note?.description || '',
     },
   });
+
+  const { register, formState: { errors }, control, setValue } = form;
 
   const [openSubject, setOpenSubject] = useState(false);
   const [searchSubject, setSearchSubject] = useState(note?.subject || '');
@@ -85,121 +87,123 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
 
 
   return (
-    <form action={dispatch} className="grid gap-6 py-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" {...register('title')} />
-            {(errors.title || state?.errors?.title) && <p className="text-sm text-destructive">{errors.title?.message || state?.errors?.title?.[0]}</p>}
+    <Form {...form}>
+      <form action={dispatch} className="grid gap-6 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" {...register('title')} />
+              {(errors.title || state?.errors?.title) && <p className="text-sm text-destructive">{errors.title?.message || state?.errors?.title?.[0]}</p>}
+          </div>
+          <Controller
+              control={control}
+              name="subject"
+              render={({ field }) => (
+                  <div className="space-y-2">
+                      <Label>Subject</Label>
+                      <Popover open={openSubject} onOpenChange={setOpenSubject}>
+                          <PopoverTrigger asChild>
+                              <FormControl>
+                                  <Button variant="outline" role="combobox" className={cn("w-full justify-between font-normal", !field.value && "text-muted-foreground")}>
+                                      {field.value || "Select or create..."}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                              </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                              <Command shouldFilter={false}>
+                                  <CommandInput placeholder="Search subject..." value={searchSubject} onValueChange={setSearchSubject}/>
+                                  <CommandList>
+                                      <CommandEmpty>No results found.</CommandEmpty>
+                                      <CommandGroup>
+                                          {canCreateSubject && (
+                                              <CommandItem onSelect={() => {
+                                                  setValue('subject', searchSubject, { shouldValidate: true });
+                                                  setOpenSubject(false);
+                                              }}>
+                                                  <span className="mr-2"></span> Create "{searchSubject}"
+                                              </CommandItem>
+                                          )}
+                                          {filteredSubjects.map((subject) => (
+                                              <CommandItem value={subject} key={subject} onSelect={() => {
+                                                  setValue('subject', subject, { shouldValidate: true });
+                                                  setOpenSubject(false);
+                                                  setSearchSubject(subject);
+                                              }}>
+                                                  <Check className={cn("mr-2 h-4 w-4", subject === field.value ? "opacity-100" : "opacity-0")}/>
+                                                  {subject}
+                                              </CommandItem>
+                                          ))}
+                                      </CommandGroup>
+                                  </CommandList>
+                              </Command>
+                          </PopoverContent>
+                      </Popover>
+                      {(errors.subject || state?.errors?.subject) && <p className="text-sm text-destructive">{errors.subject?.message || state?.errors?.subject?.[0]}</p>}
+                  </div>
+              )}
+          />
         </div>
         <Controller
-            control={control}
-            name="subject"
-            render={({ field }) => (
-                <div className="space-y-2">
-                    <Label>Subject</Label>
-                    <Popover open={openSubject} onOpenChange={setOpenSubject}>
-                        <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button variant="outline" role="combobox" className={cn("w-full justify-between font-normal", !field.value && "text-muted-foreground")}>
-                                    {field.value || "Select or create..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                            <Command shouldFilter={false}>
-                                <CommandInput placeholder="Search subject..." value={searchSubject} onValueChange={setSearchSubject}/>
-                                <CommandList>
-                                    <CommandEmpty>No results found.</CommandEmpty>
-                                    <CommandGroup>
-                                        {canCreateSubject && (
-                                            <CommandItem onSelect={() => {
-                                                setValue('subject', searchSubject, { shouldValidate: true });
-                                                setOpenSubject(false);
-                                            }}>
-                                                <span className="mr-2"></span> Create "{searchSubject}"
-                                            </CommandItem>
-                                        )}
-                                        {filteredSubjects.map((subject) => (
-                                            <CommandItem value={subject} key={subject} onSelect={() => {
-                                                setValue('subject', subject, { shouldValidate: true });
-                                                setOpenSubject(false);
-                                                setSearchSubject(subject);
-                                            }}>
-                                                <Check className={cn("mr-2 h-4 w-4", subject === field.value ? "opacity-100" : "opacity-0")}/>
-                                                {subject}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
-                    {(errors.subject || state?.errors?.subject) && <p className="text-sm text-destructive">{errors.subject?.message || state?.errors?.subject?.[0]}</p>}
-                </div>
-            )}
+          control={control}
+          name="person"
+          render={({ field }) => (
+              <div className="space-y-2">
+                  <Label>Person</Label>
+                  <Popover open={openPerson} onOpenChange={setOpenPerson}>
+                      <PopoverTrigger asChild>
+                          <FormControl>
+                              <Button variant="outline" role="combobox" className={cn("w-full justify-between font-normal", !field.value && "text-muted-foreground")}>
+                                  {field.value || "Select or create..."}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                          </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                          <Command shouldFilter={false}>
+                              <CommandInput placeholder="Search person..." value={searchPerson} onValueChange={setSearchPerson}/>
+                              <CommandList>
+                                  <CommandEmpty>No results found.</CommandEmpty>
+                                  <CommandGroup>
+                                      {canCreatePerson && (
+                                          <CommandItem onSelect={() => {
+                                              setValue('person', searchPerson, { shouldValidate: true });
+                                              setOpenPerson(false);
+                                          }}>
+                                              <span className="mr-2"></span> Create "{searchPerson}"
+                                          </CommandItem>
+                                      )}
+                                      {filteredPeople.map((person) => (
+                                          <CommandItem value={person} key={person} onSelect={() => {
+                                              setValue('person', person, { shouldValidate: true });
+                                              setOpenPerson(false);
+                                              setSearchPerson(person);
+                                          }}>
+                                              <Check className={cn("mr-2 h-4 w-4", person === field.value ? "opacity-100" : "opacity-0")}/>
+                                              {person}
+                                          </CommandItem>
+                                      ))}
+                                  </CommandGroup>
+                              </CommandList>
+                          </Command>
+                      </PopoverContent>
+                  </Popover>
+                  {(errors.person || state?.errors?.person) && <p className="text-sm text-destructive">{errors.person?.message || state?.errors?.person?.[0]}</p>}
+              </div>
+          )}
         />
-      </div>
-      <Controller
-        control={control}
-        name="person"
-        render={({ field }) => (
-            <div className="space-y-2">
-                <Label>Person</Label>
-                <Popover open={openPerson} onOpenChange={setOpenPerson}>
-                    <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button variant="outline" role="combobox" className={cn("w-full justify-between font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value || "Select or create..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command shouldFilter={false}>
-                            <CommandInput placeholder="Search person..." value={searchPerson} onValueChange={setSearchPerson}/>
-                            <CommandList>
-                                <CommandEmpty>No results found.</CommandEmpty>
-                                <CommandGroup>
-                                    {canCreatePerson && (
-                                        <CommandItem onSelect={() => {
-                                            setValue('person', searchPerson, { shouldValidate: true });
-                                            setOpenPerson(false);
-                                        }}>
-                                            <span className="mr-2"></span> Create "{searchPerson}"
-                                        </CommandItem>
-                                    )}
-                                    {filteredPeople.map((person) => (
-                                        <CommandItem value={person} key={person} onSelect={() => {
-                                            setValue('person', person, { shouldValidate: true });
-                                            setOpenPerson(false);
-                                            setSearchPerson(person);
-                                        }}>
-                                            <Check className={cn("mr-2 h-4 w-4", person === field.value ? "opacity-100" : "opacity-0")}/>
-                                            {person}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            </CommandList>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
-                {(errors.person || state?.errors?.person) && <p className="text-sm text-destructive">{errors.person?.message || state?.errors?.person?.[0]}</p>}
-            </div>
-        )}
-      />
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" {...register('description')} className="min-h-[120px]" />
-        {(errors.description || state?.errors?.description) && <p className="text-sm text-destructive">{errors.description?.message || state?.errors?.description?.[0]}</p>}
-      </div>
-       {state?.message && state.errors && (
-         <p className="text-sm text-destructive">{state.message}</p>
-       )}
-      <div className="flex justify-end">
-        <SubmitButton isEdit={!!note} />
-      </div>
-    </form>
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea id="description" {...register('description')} className="min-h-[120px]" />
+          {(errors.description || state?.errors?.description) && <p className="text-sm text-destructive">{errors.description?.message || state?.errors?.description?.[0]}</p>}
+        </div>
+         {state?.message && state.errors && (
+           <p className="text-sm text-destructive">{state.message}</p>
+         )}
+        <div className="flex justify-end">
+          <SubmitButton isEdit={!!note} />
+        </div>
+      </form>
+    </Form>
   );
 }
