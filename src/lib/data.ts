@@ -1,61 +1,87 @@
 import type { Note } from './definitions';
+import { supabase } from './supabase';
 
-// In-memory store for notes
-let notes: Note[] = [
-  {
-    id: '1',
-    title: 'Meeting with a client',
-    subject: 'Project Alpha',
-    person: 'John Doe',
-    description: 'Discuss the new requirements for Project Alpha. Prepare the presentation and the demo.',
-    createdAt: new Date('2023-10-01T10:00:00Z'),
-  },
-  {
-    id: '2',
-    title: 'Brainstorming Session',
-    subject: 'New Marketing Campaign',
-    person: 'Jane Smith',
-    description: 'Generate ideas for the Q4 marketing campaign. Focus on social media and content marketing.',
-    createdAt: new Date('2023-10-02T14:30:00Z'),
-  },
-  {
-    id: '3',
-    title: 'Dentist Appointment',
-    subject: 'Regular Check-up',
-    person: 'Dr. Adams',
-    description: 'Annual dental check-up and cleaning. Remember to ask about whitening options.',
-    createdAt: new Date('2023-10-05T09:00:00Z'),
-  },
-];
+function fromSupabase(note: {
+    id: string;
+    title: string;
+    subject: string;
+    person: string;
+    description: string;
+    created_at: string;
+}): Note {
+  return {
+    id: note.id,
+    title: note.title,
+    subject: note.subject,
+    person: note.person,
+    description: note.description,
+    createdAt: new Date(note.created_at),
+  };
+}
 
 export async function getNotes(): Promise<Note[]> {
-  // Simulate network latency
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return notes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const { data: notes, error } = await supabase
+    .from('notes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Supabase error fetching notes:', error.message);
+    return [];
+  }
+
+  return notes.map(fromSupabase);
 }
 
 export async function addNote(noteData: Omit<Note, 'id' | 'createdAt'>): Promise<Note> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const newNote: Note = {
-    ...noteData,
-    id: String(Date.now()),
-    createdAt: new Date(),
-  };
-  notes.unshift(newNote);
-  return newNote;
+  const { data, error } = await supabase
+    .from('notes')
+    .insert([
+      {
+        title: noteData.title,
+        subject: noteData.subject,
+        person: noteData.person,
+        description: noteData.description,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase error adding note:', error.message);
+    throw new Error('Failed to add note.');
+  }
+
+  return fromSupabase(data);
 }
 
 export async function updateNote(id: string, noteData: Partial<Omit<Note, 'id' | 'createdAt'>>): Promise<Note | null> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const noteIndex = notes.findIndex(note => note.id === id);
-  if (noteIndex === -1) {
-    return null;
+    const { data, error } = await supabase
+    .from('notes')
+    .update(noteData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase error updating note:', error.message);
+    if (error.code === 'PGRST116') { // No single row was returned
+        return null;
+    }
+    throw new Error('Failed to update note.');
   }
-  notes[noteIndex] = { ...notes[noteIndex], ...noteData };
-  return notes[noteIndex];
+  
+  return fromSupabase(data);
 }
 
 export async function deleteNote(id: string): Promise<void> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  notes = notes.filter(note => note.id !== id);
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Supabase error deleting note:', error.message);
+    throw new Error('Failed to delete note.');
+  }
 }
