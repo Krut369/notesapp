@@ -14,24 +14,24 @@ export interface Database {
           id: string
           created_at: string
           title: string
-          subject: string
-          person: string
+          subject: string[]
+          person: string[]
           description: string
         }
         Insert: {
           id?: string
           created_at?: string
           title: string
-          subject: string
-          person: string
+          subject: string[]
+          person: string[]
           description: string
         }
         Update: {
           id?: string
           created_at?: string
           title?: string
-          subject?: string
-          person?: string
+          subject?: string[]
+          person?: string[]
           description?: string
         }
         Relationships: []

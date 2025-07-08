@@ -1,19 +1,14 @@
 import type { Note } from './definitions';
 import { supabase } from './supabase';
 
-function fromSupabase(note: {
-    id: string;
-    title: string;
-    subject: string;
-    person: string;
-    description: string;
-    created_at: string;
-}): Note {
+// The note object from Supabase might have string values for subject and person for old data.
+// Using `any` here to handle this inconsistency, ensuring the app always gets a consistent Note type.
+function fromSupabase(note: any): Note {
   return {
     id: note.id,
     title: note.title,
-    subject: note.subject,
-    person: note.person,
+    subject: Array.isArray(note.subject) ? note.subject : (note.subject ? [note.subject] : []),
+    person: Array.isArray(note.person) ? note.person : (note.person ? [note.person] : []),
     description: note.description,
     createdAt: new Date(note.created_at),
   };

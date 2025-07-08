@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "./ui/button";
 import { Pencil, Trash2, User, Book, Calendar, Eye } from "lucide-react";
 import { format } from "date-fns";
+import { Badge } from './ui/badge';
 
 type NoteCardProps = { 
     note: Note; 
@@ -26,9 +27,21 @@ export default function NoteCard({ note, onEdit, onDelete, onView }: NoteCardPro
     <Card className="flex flex-col h-full transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
       <CardHeader>
         <CardTitle className="font-headline">{note.title}</CardTitle>
-        <CardDescription className="flex items-center gap-4 pt-2">
-            <span className="flex items-center gap-1 text-xs"><Book className="w-3 h-3"/> {note.subject}</span>
-            <span className="flex items-center gap-1 text-xs"><User className="w-3 h-3"/> {note.person}</span>
+        <CardDescription className="flex flex-col gap-2 pt-2">
+            <div className="flex items-center gap-2">
+                <Book className="w-4 h-4 text-primary shrink-0"/>
+                <div className="flex flex-wrap gap-1">
+                    {note.subject.slice(0, 3).map(s => <Badge key={s} variant="secondary">{s}</Badge>)}
+                    {note.subject.length > 3 && <Badge variant="outline">+{note.subject.length-3}</Badge>}
+                </div>
+            </div>
+             <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-primary shrink-0"/>
+                <div className="flex flex-wrap gap-1">
+                    {note.person.slice(0, 3).map(p => <Badge key={p} variant="secondary">{p}</Badge>)}
+                     {note.person.length > 3 && <Badge variant="outline">+{note.person.length-3}</Badge>}
+                </div>
+            </div>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">

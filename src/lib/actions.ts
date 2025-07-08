@@ -6,8 +6,8 @@ import { addNote, updateNote as updateNoteData, deleteNote as deleteNoteData } f
 
 const NoteSchema = z.object({
   title: z.string().min(1, { message: "Title is required." }),
-  subject: z.string().min(1, { message: "Subject is required." }),
-  person: z.string().min(1, { message: "Person is required." }),
+  subject: z.array(z.string()).min(1, { message: "At least one subject is required." }),
+  person: z.array(z.string()).min(1, { message: "At least one person is required." }),
   description: z.string().min(1, { message: "Description is required." }),
 });
 
@@ -24,8 +24,8 @@ export type FormState = {
 export async function createNote(prevState: FormState, formData: FormData) {
   const validatedFields = NoteSchema.safeParse({
     title: formData.get('title'),
-    subject: formData.get('subject'),
-    person: formData.get('person'),
+    subject: formData.getAll('subject'),
+    person: formData.getAll('person'),
     description: formData.get('description'),
   });
 
@@ -49,8 +49,8 @@ export async function createNote(prevState: FormState, formData: FormData) {
 export async function updateNote(id: string, prevState: FormState, formData: FormData) {
   const validatedFields = NoteSchema.safeParse({
     title: formData.get('title'),
-    subject: formData.get('subject'),
-    person: formData.get('person'),
+    subject: formData.getAll('subject'),
+    person: formData.getAll('person'),
     description: formData.get('description'),
   });
 

@@ -32,8 +32,8 @@ export default function NoteList({ notes }: { notes: Note[] }) {
   const [subjectFilter, setSubjectFilter] = useState('');
   const [personFilter, setPersonFilter] = useState('');
 
-  const subjects = [...new Set(notes.map((note) => note.subject))].sort();
-  const people = [...new Set(notes.map((note) => note.person))].sort();
+  const subjects = [...new Set(notes.flatMap((note) => note.subject))].sort();
+  const people = [...new Set(notes.flatMap((note) => note.person))].sort();
 
   const handleCreate = () => {
     setSelectedNote(null);
@@ -76,8 +76,8 @@ export default function NoteList({ notes }: { notes: Note[] }) {
   };
 
   const filteredNotes = notes.filter((note) => {
-    const subjectMatch = subjectFilter ? note.subject === subjectFilter : true;
-    const personMatch = personFilter ? note.person === personFilter : true;
+    const subjectMatch = subjectFilter ? note.subject.includes(subjectFilter) : true;
+    const personMatch = personFilter ? note.person.includes(personFilter) : true;
     return subjectMatch && personMatch;
   });
 
