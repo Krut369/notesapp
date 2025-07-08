@@ -61,7 +61,18 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
     },
   });
 
-  const { register, formState: { errors }, control, setValue } = form;
+  const { handleSubmit, register, formState: { errors }, control, setValue, reset } = form;
+
+  useEffect(() => {
+    reset({
+      title: note?.title || '',
+      subject: note?.subject || '',
+      person: note?.person || '',
+      description: note?.description || '',
+    });
+    setSearchSubject(note?.subject || '');
+    setSearchPerson(note?.person || '');
+  }, [note, reset]);
 
   const [openSubject, setOpenSubject] = useState(false);
   const [searchSubject, setSearchSubject] = useState(note?.subject || '');
@@ -85,10 +96,18 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
   const filteredPeople = people.filter(p => p.toLowerCase().includes(searchPerson.toLowerCase()));
   const canCreatePerson = searchPerson && !people.some(p => p.toLowerCase() === searchPerson.toLowerCase());
 
+  const processForm = (data: NoteFormData) => {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('subject', data.subject);
+    formData.append('person', data.person);
+    formData.append('description', data.description);
+    dispatch(formData);
+  };
 
   return (
     <Form {...form}>
-      <form action={dispatch} className="grid gap-6 py-4">
+      <form onSubmit={handleSubmit(processForm)} className="grid gap-6 py-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
@@ -118,7 +137,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
                                       <CommandGroup>
                                           {canCreateSubject && (
                                               <CommandItem onSelect={() => {
-                                                  setValue('subject', searchSubject, { shouldValidate: true });
+                                                  field.onChange(searchSubject);
                                                   setOpenSubject(false);
                                               }}>
                                                   <span className="mr-2"></span> Create "{searchSubject}"
@@ -126,7 +145,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
                                           )}
                                           {filteredSubjects.map((subject) => (
                                               <CommandItem value={subject} key={subject} onSelect={() => {
-                                                  setValue('subject', subject, { shouldValidate: true });
+                                                  field.onChange(subject);
                                                   setOpenSubject(false);
                                                   setSearchSubject(subject);
                                               }}>
@@ -167,7 +186,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
                                   <CommandGroup>
                                       {canCreatePerson && (
                                           <CommandItem onSelect={() => {
-                                              setValue('person', searchPerson, { shouldValidate: true });
+                                              field.onChange(searchPerson);
                                               setOpenPerson(false);
                                           }}>
                                               <span className="mr-2"></span> Create "{searchPerson}"
@@ -175,7 +194,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
                                       )}
                                       {filteredPeople.map((person) => (
                                           <CommandItem value={person} key={person} onSelect={() => {
-                                              setValue('person', person, { shouldValidate: true });
+                                              field.onChange(person);
                                               setOpenPerson(false);
                                               setSearchPerson(person);
                                           }}>
