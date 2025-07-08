@@ -14,10 +14,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, X, Check } from 'lucide-react';
+import { Loader2, X, Check, ChevronDown, PlusCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { Form, FormControl } from './ui/form';
+import { Form } from './ui/form';
 import { Badge } from './ui/badge';
 
 const NoteSchema = z.object({
@@ -56,7 +56,6 @@ const MultiSelectCombobox = ({
     onChange: (selected: string[]) => void;
     placeholder: string;
 }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
     const [open, setOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
 
@@ -65,7 +64,9 @@ const MultiSelectCombobox = ({
     };
 
     const handleSelect = (item: string) => {
-        onChange([...selected, item]);
+        if (!selected.includes(item)) {
+            onChange([...selected, item]);
+        }
         setInputValue('');
         setOpen(false);
     };
@@ -73,12 +74,10 @@ const MultiSelectCombobox = ({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue) {
             e.preventDefault();
-            if (!selected.includes(inputValue) && !options.includes(inputValue)) {
+            if (!selected.includes(inputValue)) {
                 handleSelect(inputValue);
-            } else {
-                setInputValue('');
             }
-        } else if (e.key === 'Backspace' && !inputValue) {
+        } else if (e.key === 'Backspace' && !inputValue && selected.length > 0) {
             handleRemove(selected[selected.length - 1]);
         }
     };
@@ -94,35 +93,47 @@ const MultiSelectCombobox = ({
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <div className="w-full">
-                    <div className="flex flex-wrap gap-1.5 rounded-md border border-input bg-background p-2 text-sm min-h-10">
-                        {selected.map((item) => (
-                            <Badge key={item} variant="secondary" className="gap-1.5 pr-1">
-                                {item}
-                                <button
-                                    type="button"
-                                    aria-label={`Remove ${item}`}
-                                    onClick={() => handleRemove(item)}
-                                    className="rounded-full bg-muted-foreground/20 p-0.5 hover:bg-destructive hover:text-destructive-foreground"
+                <div
+                    role="combobox"
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between rounded-md border border-input bg-transparent p-2 text-sm min-h-10 hover:cursor-pointer"
+                >
+                    <div className="flex flex-wrap gap-1">
+                        {selected.length > 0 ? (
+                             selected.map((item) => (
+                                <Badge
+                                    key={item}
+                                    variant="secondary"
+                                    className="gap-1.5 pr-1"
                                 >
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </Badge>
-                        ))}
-                        <input
-                            ref={inputRef}
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder={placeholder}
-                            className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground text-sm"
-                            onFocus={() => setOpen(true)}
-                        />
+                                    {item}
+                                    <button
+                                        type="button"
+                                        aria-label={`Remove ${item}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemove(item);
+                                        }}
+                                        className="rounded-full bg-muted-foreground/20 p-0.5 hover:bg-destructive hover:text-destructive-foreground"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))
+                        ) : (
+                            <span className="text-muted-foreground">{placeholder}</span>
+                        )}
                     </div>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                 </div>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <Command>
+                <Command onKeyDown={handleKeyDown}>
+                    <CommandInput 
+                        placeholder="Search or create..." 
+                        value={inputValue}
+                        onValueChange={setInputValue}
+                    />
                     <CommandList>
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup>
@@ -130,6 +141,7 @@ const MultiSelectCombobox = ({
                                 <CommandItem
                                     onSelect={() => handleSelect(inputValue)}
                                 >
+                                    <PlusCircle className="mr-2 h-4 w-4" />
                                     Create "{inputValue}"
                                 </CommandItem>
                             )}
