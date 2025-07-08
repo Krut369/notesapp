@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useActionState, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useActionState, useState, useTransition } from 'react';
 import { Controller, useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,18 +35,18 @@ type NoteFormProps = {
   people: string[];
 };
 
-function SubmitButton({ isEdit }: { isEdit: boolean }) {
-  const { pending } = useFormStatus();
+function SubmitButton({ isEdit, isPending }: { isEdit: boolean; isPending: boolean }) {
   return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-auto" style={{ backgroundColor: 'var(--primary)'}}>
-      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-      {pending ? (isEdit ? 'Saving...' : 'Creating...') : (isEdit ? 'Save Changes' : 'Create Note')}
+    <Button type="submit" disabled={isPending} className="w-full sm:w-auto" style={{ backgroundColor: 'var(--primary)'}}>
+      {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+      {isPending ? (isEdit ? 'Saving...' : 'Creating...') : (isEdit ? 'Save Changes' : 'Create Note')}
     </Button>
   );
 }
 
 export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) {
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const formAction = note ? updateNote.bind(null, note.id) : createNote;
   const [state, dispatch] = useActionState(formAction, undefined);
 
@@ -102,7 +101,9 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
     formData.append('subject', data.subject);
     formData.append('person', data.person);
     formData.append('description', data.description);
-    dispatch(formData);
+    startTransition(() => {
+        dispatch(formData);
+    });
   };
 
   return (
@@ -220,7 +221,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
            <p className="text-sm text-destructive">{state.message}</p>
          )}
         <div className="flex justify-end">
-          <SubmitButton isEdit={!!note} />
+          <SubmitButton isEdit={!!note} isPending={isPending} />
         </div>
       </form>
     </Form>
