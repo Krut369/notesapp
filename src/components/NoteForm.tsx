@@ -13,13 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, X, ChevronDown, PlusCircle } from 'lucide-react';
+import { Loader2, X, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Form } from './ui/form';
 import { Badge } from './ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from './ui/scroll-area';
 
 const NoteSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -74,35 +74,27 @@ const MultiSelectCombobox = ({
         );
     }
 
-    const handleCreate = (item: string) => {
-        if (!selected.includes(item)) {
-            onChange([...selected, item]);
+    const allOptions = [...new Set([...options, ...selected])].sort();
+    
+    const filteredOptions = allOptions.filter(option => 
+        option.toLowerCase().includes(inputValue.toLowerCase().trim())
+    );
+
+    const handleCreate = () => {
+        const newTag = inputValue.trim();
+        if (newTag && !allOptions.some(o => o.toLowerCase() === newTag.toLowerCase())) {
+            onChange([...selected, newTag]);
+            setInputValue('');
         }
-        setInputValue('');
     }
     
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && inputValue) {
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
             e.preventDefault();
-            const exists = [...options, ...selected].some(
-              (o) => o.toLowerCase() === inputValue.toLowerCase()
-            );
-            if (!exists) {
-                handleCreate(inputValue);
-            }
-        } else if (e.key === 'Backspace' && !inputValue && selected.length > 0) {
-            handleRemove(selected[selected.length - 1]);
+            handleCreate();
         }
     };
     
-    const allOptions = [...new Set([...options, ...selected])].sort();
-
-    const displayedOptions = allOptions.filter(option => 
-        option.toLowerCase().includes(inputValue.toLowerCase())
-    );
-
-    const canCreate = inputValue && !allOptions.find(o => o.toLowerCase() === inputValue.toLowerCase());
-
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -144,48 +136,41 @@ const MultiSelectCombobox = ({
                     <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <Command onKeyDown={handleKeyDown}>
-                    <CommandInput 
-                        placeholder="Search or create..." 
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                 <div className="p-2 border-b">
+                     <Input
+                        placeholder="Search..."
                         value={inputValue}
-                        onValueChange={setInputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
+                        className="h-9"
                     />
-                    <CommandList>
-                        <CommandEmpty>No results found.</CommandEmpty>
-                        <CommandGroup>
-                            {canCreate && (
-                                <CommandItem
-                                    onSelect={() => handleCreate(inputValue)}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
+                </div>
+                <ScrollArea className="max-h-60">
+                    <div className="p-1">
+                    {filteredOptions.length > 0 ? (
+                        filteredOptions.map((option) => (
+                            <div key={option} className="flex items-center gap-3 rounded-sm px-2 py-1.5 text-sm">
+                                <Checkbox
+                                    id={`${name}-${option}`}
+                                    checked={selected.includes(option)}
+                                    onCheckedChange={() => handleToggle(option)}
+                                />
+                                <Label
+                                    htmlFor={`${name}-${option}`}
+                                    className="w-full cursor-pointer font-normal"
                                 >
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Create "{inputValue}"
-                                </CommandItem>
-                            )}
-                            {displayedOptions.map((option) => (
-                                <CommandItem
-                                    key={option}
-                                    onSelect={() => handleToggle(option)}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
-                                    className="flex items-center gap-2"
-                                >
-                                    <Checkbox
-                                        checked={selected.includes(option)}
-                                        className="pointer-events-none"
-                                    />
-                                    <span className="w-full">{option}</span>
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
+                                    {option}
+                                </Label>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center text-sm text-muted-foreground py-4 px-2">
+                           No results found. Type and press Enter to create a new one.
+                        </div>
+                    )}
+                    </div>
+                </ScrollArea>
             </PopoverContent>
         </Popover>
     );
