@@ -67,8 +67,6 @@ const MultiSelectCombobox = ({
     };
     
     const handleToggle = (item: string) => {
-        setInputValue('');
-        setOpen(false);
         onChange(
             selected.includes(item)
                 ? selected.filter((s) => s !== item)
