@@ -19,9 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NoteView } from './NoteView';
 
 export default function NoteList({ notes }: { notes: Note[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -45,7 +47,7 @@ export default function NoteList({ notes }: { notes: Note[] }) {
 
   const handleView = (note: Note) => {
     setSelectedNote(note);
-    setDialogOpen(true);
+    setViewDialogOpen(true);
   };
 
   const handleDeleteRequest = (note: Note) => {
@@ -163,6 +165,12 @@ export default function NoteList({ notes }: { notes: Note[] }) {
         </DialogContent>
       </Dialog>
       
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] md:max-w-2xl lg:max-w-3xl bg-background">
+           <NoteView note={selectedNote} />
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
