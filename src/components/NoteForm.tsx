@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { createNote, updateNote } from '@/lib/actions';
 import type { Note } from '@/lib/definitions';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Form } from './ui/form';
 import { Badge } from './ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 const NoteSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -66,6 +67,8 @@ const MultiSelectCombobox = ({
     };
     
     const handleToggle = (item: string) => {
+        setInputValue('');
+        setOpen(false);
         onChange(
             selected.includes(item)
                 ? selected.filter((s) => s !== item)
@@ -78,6 +81,7 @@ const MultiSelectCombobox = ({
             onChange([...selected, item]);
         }
         setInputValue('');
+        setOpen(false);
     }
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -105,11 +109,14 @@ const MultiSelectCombobox = ({
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
+                <div
+                    className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "w-full justify-between font-normal min-h-10 h-auto cursor-pointer"
+                    )}
                     role="combobox"
                     aria-expanded={open}
-                    className="w-full justify-between font-normal min-h-10 h-auto"
+                    onClick={() => setOpen(!open)}
                 >
                     <div className="flex flex-wrap gap-1">
                         {selected.length > 0 ? (
@@ -138,7 +145,7 @@ const MultiSelectCombobox = ({
                         )}
                     </div>
                     <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-                </Button>
+                </div>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                 <Command onKeyDown={handleKeyDown}>
