@@ -43,6 +43,11 @@ export default function NoteList({ notes }: { notes: Note[] }) {
     setDialogOpen(true);
   };
 
+  const handleView = (note: Note) => {
+    setSelectedNote(note);
+    setDialogOpen(true);
+  };
+
   const handleDeleteRequest = (note: Note) => {
     setSelectedNote(note);
     setDeleteDialogOpen(true);
@@ -135,7 +140,7 @@ export default function NoteList({ notes }: { notes: Note[] }) {
       {filteredNotes.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredNotes.map((note) => (
-            <NoteCard key={note.id} note={note} onEdit={handleEdit} onDelete={handleDeleteRequest} />
+            <NoteCard key={note.id} note={note} onEdit={handleEdit} onDelete={handleDeleteRequest} onView={handleView} />
           ))}
         </div>
       ) : (
