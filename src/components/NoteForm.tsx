@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useActionState, useState, useTransition, useRef } from 'react';
+import { useEffect, useActionState, useState, useTransition } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { cn } from '@/lib/utils';
 
 import { createNote, updateNote } from '@/lib/actions';
 import type { Note } from '@/lib/definitions';
@@ -14,11 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, X, Check, ChevronDown, PlusCircle } from 'lucide-react';
+import { Loader2, X, ChevronDown, PlusCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Form } from './ui/form';
 import { Badge } from './ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const NoteSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -50,11 +50,13 @@ const MultiSelectCombobox = ({
     selected,
     onChange,
     placeholder,
+    name
 }: {
     options: string[];
     selected: string[];
     onChange: (selected: string[]) => void;
     placeholder: string;
+    name: string;
 }) => {
     const [open, setOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
@@ -62,41 +64,52 @@ const MultiSelectCombobox = ({
     const handleRemove = (item: string) => {
         onChange(selected.filter((s) => s !== item));
     };
+    
+    const handleToggle = (item: string) => {
+        onChange(
+            selected.includes(item)
+                ? selected.filter((s) => s !== item)
+                : [...selected, item]
+        );
+    }
 
-    const handleSelect = (item: string) => {
+    const handleCreate = (item: string) => {
         if (!selected.includes(item)) {
             onChange([...selected, item]);
         }
         setInputValue('');
-        setOpen(false);
-    };
+    }
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue) {
             e.preventDefault();
-            if (!selected.includes(inputValue)) {
-                handleSelect(inputValue);
+            const exists = [...options, ...selected].some(
+              (o) => o.toLowerCase() === inputValue.toLowerCase()
+            );
+            if (!exists) {
+                handleCreate(inputValue);
             }
         } else if (e.key === 'Backspace' && !inputValue && selected.length > 0) {
             handleRemove(selected[selected.length - 1]);
         }
     };
     
-    const filteredOptions = options.filter(
-        (option) =>
-        !selected.includes(option) &&
+    const allOptions = [...new Set([...options, ...selected])].sort();
+
+    const displayedOptions = allOptions.filter(option => 
         option.toLowerCase().includes(inputValue.toLowerCase())
     );
 
-    const canCreate = inputValue && !options.includes(inputValue) && !selected.includes(inputValue);
+    const canCreate = inputValue && !allOptions.find(o => o.toLowerCase() === inputValue.toLowerCase());
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <div
+                <Button
+                    variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="flex w-full items-center justify-between rounded-md border border-input bg-transparent p-2 text-sm min-h-10 hover:cursor-pointer"
+                    className="w-full justify-between font-normal min-h-10 h-auto"
                 >
                     <div className="flex flex-wrap gap-1">
                         {selected.length > 0 ? (
@@ -125,7 +138,7 @@ const MultiSelectCombobox = ({
                         )}
                     </div>
                     <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-                </div>
+                </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                 <Command onKeyDown={handleKeyDown}>
@@ -139,18 +152,33 @@ const MultiSelectCombobox = ({
                         <CommandGroup>
                             {canCreate && (
                                 <CommandItem
-                                    onSelect={() => handleSelect(inputValue)}
+                                    onSelect={() => handleCreate(inputValue)}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
                                 >
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Create "{inputValue}"
                                 </CommandItem>
                             )}
-                            {filteredOptions.map((option) => (
+                            {displayedOptions.map((option) => (
                                 <CommandItem
                                     key={option}
-                                    onSelect={() => handleSelect(option)}
+                                    onSelect={() => {
+                                        handleToggle(option);
+                                    }}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
+                                    className="flex items-center gap-2 cursor-pointer"
                                 >
-                                    {option}
+                                    <Checkbox
+                                        id={`checkbox-${name}-${option}`}
+                                        checked={selected.includes(option)}
+                                    />
+                                    <label htmlFor={`checkbox-${name}-${option}`} className="w-full cursor-pointer">{option}</label>
                                 </CommandItem>
                             ))}
                         </CommandGroup>
@@ -177,7 +205,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
     },
   });
 
-  const { handleSubmit, register, formState: { errors }, control, reset } = form;
+  const { handleSubmit, control, reset, formState: { errors } } = form;
 
   useEffect(() => {
     reset({
@@ -201,13 +229,12 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
 
 
   const processForm = (data: NoteFormData) => {
-    const formData = new FormData();
-    formData.append('title', data.title);
-    data.subject.forEach(s => formData.append('subject', s));
-    data.person.forEach(p => formData.append('person', p));
-    formData.append('description', data.description);
-
     startTransition(() => {
+        const formData = new FormData();
+        formData.append('title', data.title);
+        data.subject.forEach(s => formData.append('subject', s));
+        data.person.forEach(p => formData.append('person', p));
+        formData.append('description', data.description);
         dispatch(formData);
     });
   };
@@ -217,7 +244,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
       <form onSubmit={handleSubmit(processForm)} className="grid gap-6 py-4">
         <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" {...register('title')} />
+            <Input id="title" {...form.register('title')} />
             {(errors.title || state?.errors?.title) && <p className="text-sm text-destructive">{errors.title?.message || state?.errors?.title?.[0]}</p>}
         </div>
 
@@ -231,7 +258,8 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
                         options={subjects}
                         selected={field.value}
                         onChange={field.onChange}
-                        placeholder={field.value.length > 0 ? "Add more..." : "Select or create subjects..."}
+                        placeholder="Select or create subjects..."
+                        name="subject"
                     />
                      {(errors.subject || state?.errors?.subject) && <p className="text-sm text-destructive">{errors.subject?.message || state?.errors?.subject?.[0]}</p>}
                 </div>
@@ -247,7 +275,8 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
                         options={people}
                         selected={field.value}
                         onChange={field.onChange}
-                        placeholder={field.value.length > 0 ? "Add more..." : "Select or create people..."}
+                        placeholder="Select or create people..."
+                        name="person"
                     />
                     {(errors.person || state?.errors?.person) && <p className="text-sm text-destructive">{errors.person?.message || state?.errors?.person?.[0]}</p>}
                 </div>
@@ -255,7 +284,7 @@ export function NoteForm({ note, onFinished, subjects, people }: NoteFormProps) 
         />
         <div className="space-y-2">
           <Label htmlFor="description">Description</Label>
-          <Textarea id="description" {...register('description')} className="min-h-[120px]" />
+          <Textarea id="description" {...form.register('description')} className="min-h-[120px]" />
           {(errors.description || state?.errors?.description) && <p className="text-sm text-destructive">{errors.description?.message || state?.errors?.description?.[0]}</p>}
         </div>
          {state?.message && state.errors && (
