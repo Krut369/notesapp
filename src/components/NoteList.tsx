@@ -154,7 +154,7 @@ export default function NoteList({ notes }: { notes: Note[] }) {
           <DialogHeader>
             <DialogTitle>{selectedNote ? 'Edit Note' : 'Create a new note'}</DialogTitle>
           </DialogHeader>
-          <NoteForm note={selectedNote} onFinished={() => setDialogOpen(false)} />
+          <NoteForm note={selectedNote} onFinished={() => setDialogOpen(false)} subjects={subjects} people={people} />
         </DialogContent>
       </Dialog>
       
