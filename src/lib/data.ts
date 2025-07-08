@@ -4,11 +4,32 @@ import { supabase } from './supabase';
 // The note object from Supabase might have string values for subject and person for old data.
 // Using `any` here to handle this inconsistency, ensuring the app always gets a consistent Note type.
 function fromSupabase(note: any): Note {
+  const parseTags = (tags: any): string[] => {
+    if (Array.isArray(tags)) {
+      return tags.filter(Boolean).map(String);
+    }
+    if (typeof tags === 'string') {
+      const trimmedTags = tags.trim();
+      if (trimmedTags.startsWith('[') && trimmedTags.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmedTags);
+          if (Array.isArray(parsed)) {
+            return parsed.filter(Boolean).map(String);
+          }
+        } catch (e) {
+          // Fall through to treat as a single tag
+        }
+      }
+      return trimmedTags ? [trimmedTags] : [];
+    }
+    return [];
+  };
+
   return {
     id: note.id,
     title: note.title,
-    subject: Array.isArray(note.subject) ? note.subject : (note.subject ? [note.subject] : []),
-    person: Array.isArray(note.person) ? note.person : (note.person ? [note.person] : []),
+    subject: parseTags(note.subject),
+    person: parseTags(note.person),
     description: note.description,
     createdAt: new Date(note.created_at),
   };
