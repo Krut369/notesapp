@@ -67,15 +67,17 @@ const MultiSelectCombobox = ({
     const handleSelect = (item: string) => {
         onChange([...selected, item]);
         setInputValue('');
+        setOpen(false);
     };
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue) {
             e.preventDefault();
             if (!selected.includes(inputValue) && !options.includes(inputValue)) {
-                onChange([...selected, inputValue]);
+                handleSelect(inputValue);
+            } else {
+                setInputValue('');
             }
-            setInputValue('');
         } else if (e.key === 'Backspace' && !inputValue) {
             handleRemove(selected[selected.length - 1]);
         }
@@ -126,10 +128,7 @@ const MultiSelectCombobox = ({
                         <CommandGroup>
                             {canCreate && (
                                 <CommandItem
-                                    onSelect={() => {
-                                        handleSelect(inputValue);
-                                        inputRef.current?.focus();
-                                    }}
+                                    onSelect={() => handleSelect(inputValue)}
                                 >
                                     Create "{inputValue}"
                                 </CommandItem>
@@ -137,10 +136,7 @@ const MultiSelectCombobox = ({
                             {filteredOptions.map((option) => (
                                 <CommandItem
                                     key={option}
-                                    onSelect={() => {
-                                        handleSelect(option);
-                                        inputRef.current?.focus();
-                                    }}
+                                    onSelect={() => handleSelect(option)}
                                 >
                                     {option}
                                 </CommandItem>
