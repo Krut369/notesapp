@@ -79,7 +79,6 @@ const MultiSelectCombobox = ({
             onChange([...selected, item]);
         }
         setInputValue('');
-        setOpen(false);
     }
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -170,20 +169,18 @@ const MultiSelectCombobox = ({
                             {displayedOptions.map((option) => (
                                 <CommandItem
                                     key={option}
-                                    onSelect={() => {
-                                        handleToggle(option);
-                                    }}
+                                    onSelect={() => handleToggle(option)}
                                     onMouseDown={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                     }}
-                                    className="flex items-center gap-2 cursor-pointer"
+                                    className="flex items-center gap-2"
                                 >
                                     <Checkbox
-                                        id={`checkbox-${name}-${option}`}
                                         checked={selected.includes(option)}
+                                        className="pointer-events-none"
                                     />
-                                    <label htmlFor={`checkbox-${name}-${option}`} className="w-full cursor-pointer">{option}</label>
+                                    <span className="w-full">{option}</span>
                                 </CommandItem>
                             ))}
                         </CommandGroup>
