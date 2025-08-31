@@ -13,8 +13,7 @@ A starter Next.js application using **Firebase Studio** for building a Notes app
 
 - **Frontend:** Next.js, TypeScript, React
 - **Backend/Database:** Firebase Firestore
-- **Authentication (optional):** Firebase Auth
-- **Styling:** CSS/SCSS (or Tailwind if used)
+- **Styling:** CSS/SCSS 
 
 ## Getting Started
 
